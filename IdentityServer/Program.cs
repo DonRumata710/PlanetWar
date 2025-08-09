@@ -15,7 +15,7 @@ namespace IdentityServer
     {
         public static void Main(string[] args)
         {
-            Console.Title = "IdentityServer4";
+            Console.Title = "Duende IdentityServer";
 
             CreateWebHostBuilder(args).Build().Run();
         }
@@ -32,7 +32,7 @@ namespace IdentityServer
                             .MinimumLevel.Override("System", LogEventLevel.Warning)
                             .MinimumLevel.Override("Microsoft.AspNetCore.Authentication", LogEventLevel.Information)
                             .Enrich.FromLogContext()
-                            .WriteTo.File(@"identityserver4_log.txt")
+                            .WriteTo.File(@"identityserver_log.txt")
                             .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}", theme: AnsiConsoleTheme.Literate);
                     });
         }
