@@ -1,6 +1,6 @@
 ﻿using IdentityModel;
-using IdentityServer4.Models;
-using IdentityServer4.Validation;
+using Duende.IdentityServer.Models;
+using Duende.IdentityServer.Validation;
 using Serilog;
 using System;
 using System.Collections.Generic;
