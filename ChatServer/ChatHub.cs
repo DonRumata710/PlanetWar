@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace ChatServer
 {
     [Authorize]
-    [EnableCors]
+    [EnableCors("CorsPolicy")]
     public class ChatHub : Hub
     {
         public async Task Send(int chat, string message)
