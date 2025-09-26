@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Text;
@@ -12,6 +14,8 @@ namespace ChatServer
 {
     public class Startup
     {
+        private const string CorsPolicyName = "CorsPolicy";
+
         public IConfiguration Config { get; }
 
         public Startup(IConfiguration config)
@@ -23,15 +27,34 @@ namespace ChatServer
         {
             services.AddSignalR();
 
+            var allowedOrigins = Config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            allowedOrigins = allowedOrigins
+                .Where(origin => !string.IsNullOrWhiteSpace(origin))
+                .Select(origin => origin.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
             services.AddCors(options =>
             {
-                options.AddPolicy(name: "MyPolicy",
-                    builder =>
+                options.AddPolicy(CorsPolicyName, builder =>
+                {
+                    builder
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+
+                    var allowAnyOrigin = allowedOrigins.Length == 0 || allowedOrigins.Any(origin => origin == "*");
+
+                    if (allowAnyOrigin)
                     {
-                        builder.AllowAnyOrigin()
-                                .AllowAnyMethod()
-                                .AllowAnyHeader();
-                    });
+                        builder.SetIsOriginAllowed(_ => true);
+                    }
+                    else
+                    {
+                        builder
+                            .WithOrigins(allowedOrigins)
+                            .AllowCredentials();
+                    }
+                });
             });
 
             // adds DI services to DI and configures bearer as the default scheme
@@ -60,10 +83,9 @@ namespace ChatServer
                 app.UseDeveloperExceptionPage();
             }
 
-            //app.UseCors("MyPolicy");
-            app.UseCors(config => config.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
-
             app.UseRouting();
+
+            app.UseCors(CorsPolicyName);
 
             app.UseEndpoints(endpoints =>
             {

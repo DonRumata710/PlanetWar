@@ -1,5 +1,7 @@
 ﻿using System.Net.Http;
 using System.Reflection;
+using System;
+using System.Linq;
 using LaunchServer.Controllers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -14,6 +16,8 @@ namespace LaunchServer
 {
     public class Startup
     {
+        private const string CorsPolicyName = "CorsPolicy";
+
         public IConfiguration Configuration { get; }
 
         public Startup(IConfiguration configuration)
@@ -23,7 +27,35 @@ namespace LaunchServer
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors();
+            var allowedOrigins = Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            allowedOrigins = allowedOrigins
+                .Where(origin => !string.IsNullOrWhiteSpace(origin))
+                .Select(origin => origin.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(CorsPolicyName, builder =>
+                {
+                    builder
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+
+                    var allowAnyOrigin = allowedOrigins.Length == 0 || allowedOrigins.Any(origin => origin == "*");
+
+                    if (allowAnyOrigin)
+                    {
+                        builder.SetIsOriginAllowed(_ => true);
+                    }
+                    else
+                    {
+                        builder
+                            .WithOrigins(allowedOrigins)
+                            .AllowCredentials();
+                    }
+                });
+            });
 
             // adds DI services to DI and configures bearer as the default scheme
             services.AddAuthentication("Bearer")
@@ -52,13 +84,7 @@ namespace LaunchServer
         {
             IdentityModelEventSource.ShowPII = true;
 
-            app.UseCors(builder =>
-                 builder
-                   .WithOrigins("http://localhost:3000")
-                   .AllowAnyHeader()
-                   .AllowAnyMethod()
-                   .AllowCredentials()
-               );
+            app.UseCors(CorsPolicyName);
             // adds authentication middleware to the pipeline so authentication will be performed on every request
             app.UseAuthentication();
             app.UseMvc();

@@ -12,11 +12,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Linq;
 
 namespace IdentityServer
 {
     public class Startup
     {
+        private const string CorsPolicyName = "CorsPolicy";
+
         public IConfiguration Configuration { get; }
 
         public Startup(IConfiguration configuration)
@@ -27,6 +31,35 @@ namespace IdentityServer
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+
+            var allowedOrigins = Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            allowedOrigins = allowedOrigins
+                .Where(origin => !string.IsNullOrWhiteSpace(origin))
+                .Select(origin => origin.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(CorsPolicyName, builder =>
+                {
+                    builder
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+
+                    var allowAnyOrigin = allowedOrigins.Length == 0 || allowedOrigins.Any(origin => origin == "*");
+
+                    if (allowAnyOrigin)
+                    {
+                        builder.SetIsOriginAllowed(_ => true);
+                    }
+                    else
+                    {
+                        builder.WithOrigins(allowedOrigins);
+                        builder.AllowCredentials();
+                    }
+                });
+            });
             
             services.AddSingleton(new DatabaseService(Configuration.GetValue<string>("login"), Configuration.GetValue<string>("password")));
 
@@ -52,6 +85,8 @@ namespace IdentityServer
 
             app.UseStaticFiles();
             app.UseRouting();
+
+            app.UseCors(CorsPolicyName);
 
             app.UseIdentityServer();
             app.UseAuthentication();
