@@ -1,0 +1,34 @@
+{
+    "name":                 "signal",
+    "version":              "7.0.6",
+    "description":
+
+      "An evented semaphore.",
+
+    "keywords":
+    [
+                            "cadence", "async", "asynchronous", "control",
+                            "flow", "micro-js", "step", "callback"
+    ],
+    "author":               "Alan Gutierrez <alan@prettyrobots.com>",
+    "homepage":             "http://bigeasy.github.io/signal",
+    "license":              "MIT",
+    "repository":
+    {
+                            "url": "bigeasy/signal",
+                            "type": "git"
+    },
+    "dependencies":
+    {
+                            "operation":                    "5.0.x"
+    },
+    "devDependencies":
+    {
+                            "proof":                        "7.0.x"
+    },
+    "main":                 "signal.js",
+    "scripts":
+    {
+                            "test": "proof test test/*.t.js && mocha"
+    }
+}

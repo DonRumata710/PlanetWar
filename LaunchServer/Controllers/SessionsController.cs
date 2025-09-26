@@ -23,20 +23,32 @@ namespace LaunchServer.Controllers
         public IActionResult Get(int? id)
         {
             if (id.HasValue)
+            {
                 return Ok(database.GetSession(id.Value));
+            }
             else
+            {
+                database.ClearOutSessionList();
                 return Ok(database.GetNotStartedSessions());
+            }
         }
 
         [HttpGet]
         [Route("join")]
         public IActionResult Join(int sessionId)
         {
-            Int32 userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            Log.Information("User " + userId.ToString() + " joined to session " + sessionId.ToString());
+            try
+            {
+                Int32 userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                Log.Information("User " + userId.ToString() + " joined to session " + sessionId.ToString());
 
-            database.AddPlayer(userId, sessionId);
-            return Ok();
+                database.AddPlayer(userId, sessionId);
+                return Ok();
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                return StatusCode(400, ex.Message);
+            }
         }
 
         [HttpGet]
@@ -97,6 +109,11 @@ namespace LaunchServer.Controllers
         [HttpPut]
         public IActionResult RefreshSession(int id, SessionStartParameters param)
         {
+            var players = database.GetSessionPlayers(id);
+            var userId = Int32.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            if (players.Count == 0 || players[0] != userId)
+                return Forbid();
+
             database.RefreshSession(id, param);
             return Ok();
         }

@@ -10,6 +10,7 @@ class Session extends Component {
     constructor(props) {
         super(props);
         this.id = props.match.params.sessionId;
+        this.sessionStarted = false;
         this.editPermission = this.props.location.state != null;
     }
 
@@ -19,7 +20,8 @@ class Session extends Component {
     }
 
     componentWillUnmount() {
-        leaveSession();
+        if (!this.sessionStarted)
+            leaveSession();
     }
 
     loadData() {
@@ -80,7 +82,10 @@ class Session extends Component {
             return (
                 <Page>
                     <PropertyList properties={this.parameters} editPermission={this.editPermission} />
-                    <LinkButton to={"/game/" + this.id} onClick={async () => setGameServiceAddress(await startSession(this.id))}>
+                    <LinkButton to={"/game/" + this.id} onClick={async () => {
+                            this.sessionStarted = true;
+                            setGameServiceAddress(await startSession(this.id));
+                        }}>
                         Start game
                     </LinkButton>
                 </Page>

@@ -92,7 +92,7 @@ namespace LaunchServer.Controllers
             };
         }
 
-        private List<int> GetSessionPlayers(int sessionId)
+        public List<int> GetSessionPlayers(int sessionId)
         {
             List<int> res = new List<int>();
 
@@ -199,6 +199,17 @@ namespace LaunchServer.Controllers
             {
                 connection.Open();
                 cmd.Parameters.Add("playerId", MySql.Data.MySqlClient.MySqlDbType.Int32).Value = playerId;
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public void ClearOutSessionList()
+        {
+            string strSQL = "call clear_out_session_list();";
+            using (MySqlConnection connection = CreateConnection())
+            using (MySqlCommand cmd = new MySqlCommand(strSQL, connection))
+            {
+                connection.Open();
                 cmd.ExecuteNonQuery();
             }
         }
